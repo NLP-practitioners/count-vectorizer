@@ -9,9 +9,12 @@ class Document(TypedDict):
     count_vector: Dict[str, int]
 
 
+Documents = List[Document]
+
+
 def count_vectorize(text):
     # eow = end of word
-    eow_punctuations = ["?", ".", "!", ",", "\n", " "]
+    eow_punctuations = ["?", ".", "!", ",", "\n", " ", "(", ")"]
     eow_punctuations_codes = set([ord(code) for code in eow_punctuations])
     tokens = set()
     count_vector = {}
@@ -33,7 +36,7 @@ def count_vectorize(text):
 
 
 def generate_documents(file_paths: List[str]):
-    documents: List[Document] = []
+    documents: Documents = []
     for file_path in file_paths:
         with open(file_path) as file:
             (count_vector, tokens) = count_vectorize(file.read())
@@ -45,7 +48,7 @@ def generate_documents(file_paths: List[str]):
     return documents
 
 
-def generate_vocabulary(documents: List[Document]):
+def generate_vocabulary(documents: Documents):
     vocabulary = set()
     for document in documents:
         for token in document["tokens"]:
@@ -53,11 +56,27 @@ def generate_vocabulary(documents: List[Document]):
     return list(vocabulary)
 
 
-def merge_count_vectors(vocabulary: List[str], documents: List[Document]):
+def merge_count_vectors(vocabulary: List[str], documents: Documents):
     for document in documents:
         for token in vocabulary:
             if token not in document["count_vector"]:
                 document["count_vector"][token] = 0
+
+
+def generate_count_vector_matrix(vocabulary: List[str], documents: Documents):
+    count_vector_matrix = []
+
+    for document in documents:
+        sparse_count_vector = []
+        for token in vocabulary:
+            if token in document["count_vector"]:
+                sparse_count_vector.append(document["count_vector"][token])
+            else:
+                sparse_count_vector.append(0)
+
+        count_vector_matrix.append(sparse_count_vector)
+
+    return count_vector_matrix
 
 
 def main(dataset_directory: str):
@@ -68,9 +87,10 @@ def main(dataset_directory: str):
 
     documents = generate_documents(file_paths)
     vocabulary = generate_vocabulary(documents)
+    vocabulary = sorted(vocabulary)
     merge_count_vectors(vocabulary, documents)
-
-    print(documents)
+    count_vector_matrix = generate_count_vector_matrix(vocabulary, documents)
+    print(count_vector_matrix)
 
 
 dataset_directory = join(abspath(dirname(__file__)), "..", "..", "datasets")
