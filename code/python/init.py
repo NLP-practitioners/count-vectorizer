@@ -1,4 +1,5 @@
-from os import getcwd, listdir
+import math
+from os import listdir
 from os.path import abspath, basename, dirname, isfile, join
 from typing import Dict, List, TypedDict
 
@@ -79,6 +80,17 @@ def generate_count_vector_matrix(vocabulary: List[str], documents: Documents):
     return count_vector_matrix
 
 
+def normalize_count_vectors(documents: Documents):
+    for document in documents:
+        total_tokens = 0
+        for count in document["count_vector"].values():
+            total_tokens += math.pow(count, 2)
+        l2_norm = math.sqrt(total_tokens)
+
+        for token, count in document["count_vector"].items():
+            document["count_vector"][token] = count / l2_norm
+
+
 def main(dataset_directory: str):
 
     # Get all files in the directory
@@ -89,6 +101,7 @@ def main(dataset_directory: str):
     vocabulary = generate_vocabulary(documents)
     vocabulary = sorted(vocabulary)
     merge_count_vectors(vocabulary, documents)
+    normalize_count_vectors(documents)
     count_vector_matrix = generate_count_vector_matrix(vocabulary, documents)
     print(count_vector_matrix)
 
