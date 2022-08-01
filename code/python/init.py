@@ -15,7 +15,7 @@ class Document(TypedDict):
 Documents = List[Document]
 
 
-def count_vectorize(text):
+def count_vectorize(text, analyzer):
     # characters that indicate the end of a token
     eow_punctuations = ["?", ".", "!", ",", "\n", " ", "(", ")"]
     eow_punctuations_codes = set([ord(code) for code in eow_punctuations])
@@ -26,24 +26,27 @@ def count_vectorize(text):
         char = char.lower()
         normalized_char = normalize(char)
         # check end of a token
-        if (len(normalized_char) != 0 and ord(normalized_char) in eow_punctuations_codes):
-            if len(token) != 0:
-                if not token in tokens:
-                    count_vector[token] = 1
-                else:
-                    count_vector[token] += 1
-                tokens.add(token)
-                token = ''
-        else:
-            token += normalized_char
+        if len(normalized_char) != 0:
+            is_punctuation = ord(normalized_char) in eow_punctuations_codes
+            if (((analyzer == "word" and is_punctuation) or (analyzer == "char" and not is_punctuation))):
+                token = normalized_char if analyzer == "char" else token
+                if len(token) != 0:
+                    if not token in tokens:
+                        count_vector[token] = 1
+                    else:
+                        count_vector[token] += 1
+                    tokens.add(token)
+                    token = ''
+            elif analyzer != "char":
+                token += normalized_char
     return (count_vector, tokens)
 
 
-def generate_documents(file_paths: List[str]):
+def generate_documents(file_paths: List[str], analyzer):
     documents: Documents = []
     for file_path in file_paths:
         with open(file_path, encoding="utf-8") as file:
-            (count_vector, tokens) = count_vectorize(file.read())
+            (count_vector, tokens) = count_vectorize(file.read(), analyzer)
             documents.append({
                 "count_vector": count_vector,
                 "tokens": tokens,
@@ -100,8 +103,9 @@ def main(dataset_directory: str):
     file_paths = [join(dataset_directory, f) for f in listdir(dataset_directory)
                   if isfile(join(dataset_directory, f))]
 
-    documents = generate_documents(file_paths)
+    documents = generate_documents(file_paths, "word")
     vocabulary = generate_vocabulary(documents)
+    print(vocabulary)
     vocabulary = sorted(vocabulary)
     merge_count_vectors(vocabulary, documents)
     normalize_count_vectors(documents)
