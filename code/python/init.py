@@ -3,6 +3,8 @@ from os import listdir
 from os.path import abspath, basename, dirname, isfile, join
 from typing import Dict, List, TypedDict
 
+from normalize import normalize
+
 
 class Document(TypedDict):
     filename: str
@@ -14,7 +16,7 @@ Documents = List[Document]
 
 
 def count_vectorize(text):
-    # eow = end of word
+    # characters that indicate the end of a token
     eow_punctuations = ["?", ".", "!", ",", "\n", " ", "(", ")"]
     eow_punctuations_codes = set([ord(code) for code in eow_punctuations])
     tokens = set()
@@ -22,8 +24,9 @@ def count_vectorize(text):
     token = ''
     for char in text:
         char = char.lower()
+        normalized_char = normalize(char)
         # check end of a token
-        if (ord(char) in eow_punctuations_codes):
+        if (len(normalized_char) != 0 and ord(normalized_char) in eow_punctuations_codes):
             if len(token) != 0:
                 if not token in tokens:
                     count_vector[token] = 1
@@ -32,14 +35,14 @@ def count_vectorize(text):
                 tokens.add(token)
                 token = ''
         else:
-            token += char
+            token += normalized_char
     return (count_vector, tokens)
 
 
 def generate_documents(file_paths: List[str]):
     documents: Documents = []
     for file_path in file_paths:
-        with open(file_path) as file:
+        with open(file_path, encoding="utf-8") as file:
             (count_vector, tokens) = count_vectorize(file.read())
             documents.append({
                 "count_vector": count_vector,
