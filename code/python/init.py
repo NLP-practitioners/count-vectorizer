@@ -14,6 +14,26 @@ class Document(TypedDict):
 
 Documents = List[Document]
 
+stop_words = [
+    "a",
+    "the",
+    "in",
+    "at",
+    "an",
+    "and",
+    "or",
+    "that",
+    "are",
+    "with",
+    "is",
+    "of",
+    "to",
+    "by",
+    "between",
+    "which",
+    "therefore",
+]
+
 
 def count_vectorize(text, analyzer):
     # characters that indicate the end of a token
@@ -29,7 +49,7 @@ def count_vectorize(text, analyzer):
         if len(normalized_char) != 0:
             is_punctuation = ord(normalized_char) in eow_punctuations_codes
             if (((analyzer == "word" and is_punctuation) or (analyzer == "char" and not is_punctuation))):
-                token = normalized_char if analyzer == "char" else token
+                token = normalized_char if analyzer == "char" else token if token not in stop_words else ''
                 if len(token) != 0:
                     if not token in tokens:
                         count_vector[token] = 1
